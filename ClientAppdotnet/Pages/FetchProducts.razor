@@ -1,0 +1,51 @@
+@page "/fetchproducts"
+@using System.Text.Json
+@inject HttpClient Http
+
+<h3>Product List</h3>
+
+<ul>
+   @if (products != null)
+    {
+        foreach (Product product in products)
+        {
+            <li>@product.Name - $@product.Price</li>
+        }
+    }
+    else
+    {
+        <li>Loading...</li>
+    }
+</ul>
+
+@code {
+    private Product[]? products;
+    // Copilot suggested guarding the API call with a flag (isLoaded)
+    // to avoid redundant requests when the component re-renders.
+    private bool isLoaded;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (isLoaded) return; // Avoid redundant calls
+
+        var response = await Http.GetAsync("api/productlist");
+        response.EnsureSuccessStatusCode();
+
+        var json = await response.Content.ReadAsStringAsync();
+        // Copilot helped identify that PropertyNameCaseInsensitive was needed
+        // so the JSON "id", "name", "price" matched the C# properties Id, Name, Price.
+        var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+        products = JsonSerializer.Deserialize<Product[]>(json, options);
+
+        isLoaded = true;
+    }
+
+
+    public class Product
+    {
+        public int Id { get; set; }
+        public string? Name { get; set; }
+        public double Price { get; set; }
+        public int Stock { get; set; }
+    }
+}
